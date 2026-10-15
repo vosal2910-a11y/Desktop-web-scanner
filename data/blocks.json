@@ -1,0 +1,23 @@
+[
+  {
+    "id": "general",
+    "name": "Generale",
+    "color": "#3b82f6",
+    "created_at": 1791977878.8445027,
+    "description": "Documenti generici"
+  },
+  {
+    "id": "invoices",
+    "name": "Fatture & Ricevute",
+    "color": "#10b981",
+    "created_at": 1791977878.8445027,
+    "description": "Spese fiscali e contabilità"
+  },
+  {
+    "id": "ids",
+    "name": "Documenti Identità",
+    "color": "#8b5cf6",
+    "created_at": 1791977878.8445027,
+    "description": "Carte d'identità, passaporti, patenti"
+  }
+]

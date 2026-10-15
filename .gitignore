@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+venv/
+env/
+ENV/
+.venv/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# User dynamic data & uploads (preserve directory structure)
+data/documents/*
+!data/documents/.gitkeep
+data/trash/*
+!data/trash/.gitkeep
+
+# IDE & Editor caches
+.vscode/
+.idea/
+*.sublime-workspace
+*.swp

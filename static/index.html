@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Web Multi - Windows PC</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- SIDEBAR SINISTRA -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <line x1="10" y1="9" x2="8" y2="9"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Scanner Web Multi</h1>
+        <span>Windows Edition</span>
+      </div>
+    </div>
+
+    <!-- Sezione Navigazione Principale -->
+    <div class="nav-section">
+      <div class="nav-item active" id="navAllDocs" onclick="window.app.selectBlock('all')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>Tutti i Documenti</span>
+      </div>
+      <div class="nav-item" id="navTrashDocs" onclick="window.app.selectBlock('trash')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        <span>Cestino</span>
+      </div>
+    </div>
+
+    <!-- Sezione Documenti Recenti (Miniature sulla barra sinistra) -->
+    <div class="nav-section" style="max-height: 220px; display: flex; flex-direction: column;">
+      <div class="section-title">
+        <span>File / Documenti Recenti</span>
+      </div>
+      <div id="sidebarRecentDocs" style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px;">
+        <!-- Renderizzato dinamicamente con miniature -->
+      </div>
+    </div>
+
+    <!-- Sezione Blocchi di Documenti (Richiesta Utente) -->
+    <div class="nav-section" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+      <div class="section-title">
+        <span>Blocchi di Documenti</span>
+        <button id="btnCreateBlock" class="btn btn-icon" style="padding: 2px 6px; font-size: 11px;" title="Crea Nuovo Blocco">+</button>
+      </div>
+      <div class="sidebar-blocks" id="sidebarBlocksList">
+        <!-- Renderizzato dinamicamente -->
+      </div>
+    </div>
+
+    <!-- Footer Sidebar -->
+    <div class="sidebar-footer">
+      <span style="font-size: 11px; color: var(--text-secondary);">Scanner Web Multi v2.0</span>
+      <button id="btnToggleTheme" class="btn btn-icon" title="Cambia Tema Scuro/Chiaro">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="main-wrapper">
+    <!-- Header Superiore -->
+    <header class="top-header">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary);">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Cerca documenti o testo OCR...">
+      </div>
+
+      <div class="top-actions">
+        <button id="btnSelectAll" class="btn btn-secondary" title="Seleziona tutti i documenti visibili">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 11 12 14 22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <span>Seleziona Tutti</span>
+        </button>
+
+        <button id="btnScanCamera" class="btn btn-secondary" title="Scansiona da Webcam">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span>Fotocamera</span>
+        </button>
+
+        <button id="btnImportFiles" class="btn btn-primary" title="Importa file dal PC">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>Importa File / PDF</span>
+        </button>
+        <input type="file" id="fileInputUpload" multiple accept="image/*,.pdf" style="display: none;">
+      </div>
+    </header>
+
+    <!-- Barra delle Azioni di Massa (Floating Batch Toolbar) -->
+    <div class="batch-toolbar" id="batchToolbar">
+      <span class="batch-counter" id="batchCount">0 selezionati</span>
+      <button class="btn btn-primary" id="btnBatchEnhance" title="Applica filtri e miglioramenti a tutti i documenti selezionati">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Miglioramenti in Blocco</span>
+      </button>
+      <button class="btn btn-secondary" id="btnBatchMove" title="Sposta in un altro blocco">Sposta in Blocco</button>
+      <button class="btn btn-secondary" id="btnBatchExportPdf" title="Crea un unico PDF con tutti i selezionati">PDF Unificato</button>
+      <button class="btn btn-secondary" id="btnBatchExportJpg" title="Esporta tutte le pagine dei selezionati in formato JPG">JPG (ZIP)</button>
+      <button class="btn btn-secondary" id="btnBatchExportPng" title="Esporta tutte le pagine dei selezionati in formato PNG">PNG (ZIP)</button>
+      <button class="btn btn-secondary" id="btnBatchExportZip" title="Scarica archivio ZIP completo con PDF e JPG">ZIP Completo</button>
+      <button class="btn btn-danger" id="btnBatchTrash" title="Sposta nel cestino">Cestina</button>
+      <button class="btn btn-icon" id="btnDeselectAll" title="Annulla selezione">✕</button>
+    </div>
+
+    <!-- Area Contenuto: Griglia Documenti -->
+    <div class="content-area" id="gridViewArea">
+      <div class="dropzone" id="dropZoneArea" style="margin-bottom: 24px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--accent-color); margin-bottom: 8px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p style="font-weight: 600; font-size: 15px;">Clicca qui o trascina le immagini / PDF per caricarli</p>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">Fai clic per selezionare i file oppure trascinali qui (JPG, PNG, WEBP, TIFF, PDF)</p>
+      </div>
+
+      <div class="documents-grid" id="docsGrid">
+        <!-- Schede documenti generate dinamicamente -->
+      </div>
+    </div>
+
+    <!-- Area Contenuto: Editor Dettaglio Documento -->
+    <div class="content-area editor-view" id="editorViewArea">
+      <div class="editor-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" id="btnBackToList">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>Torna ai Documenti</span>
+          </button>
+          <h2 id="editorDocTitle" style="font-size: 17px; font-weight: 700;">Dettaglio Scansione</h2>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" id="btnExportDocPdf">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Esporta (PDF, JPG, PNG)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="editor-main">
+        <!-- Striscia Miniature Pagine (Reordering / Selezione) -->
+        <div class="pages-strip" id="pagesStrip">
+          <!-- Pagine generate dinamicamente -->
+        </div>
+
+        <!-- Palcoscenico Anteprima Pagina Corrente -->
+        <div class="preview-stage">
+          <img id="mainStageImg" src="" alt="Anteprima Pagina">
+        </div>
+
+        <!-- Pannello Strumenti di Miglioramento OSS -->
+        <div class="editor-tools">
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="btnOpenCropper" style="flex: 1;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
+                <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+              </svg>
+              <span>Raddrizza & Ritaglia</span>
+            </button>
+            <button class="btn btn-secondary" id="btnRotatePage" title="Ruota 90°">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Filtri Colore OSS Document Scanner -->
+          <div>
+            <label style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">Filtri Immagine</label>
+            <div class="filter-grid">
+              <button class="filter-btn active" data-filter="magic_color">
+                <span>Magic Paper</span>
+                <small style="font-size: 10px; opacity: 0.7;">Ottimizzato</small>
+              </button>
+              <button class="filter-btn" data-filter="bw">
+                <span>Bianco e Nero</span>
+                <small style="font-size: 10px; opacity: 0.7;">Alto contrasto</small>
+              </button>
+              <button class="filter-btn" data-filter="grayscale">
+                <span>Scala di Grigi</span>
+                <small style="font-size: 10px; opacity: 0.7;">Omogeneo</small>
+              </button>
+              <button class="filter-btn" data-filter="normal">
+                <span>Originale</span>
+                <small style="font-size: 10px; opacity: 0.7;">Nessun filtro</small>
+              </button>
+              <button class="filter-btn" data-filter="sepia">
+                <span>Sepia</span>
+                <small style="font-size: 10px; opacity: 0.7;">Vintage</small>
+              </button>
+              <button class="filter-btn" data-filter="polaroid">
+                <span>Polaroid</span>
+                <small style="font-size: 10px; opacity: 0.7;">Color boost</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- Regolazioni Fine -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span>Luminosità</span>
+              <span id="brightnessVal">0</span>
+            </div>
+            <input type="range" id="brightnessSlider" min="-50" max="50" value="0">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span>Contrasto</span>
+              <span id="contrastVal">0</span>
+            </div>
+            <input type="range" id="contrastSlider" min="-50" max="50" value="0">
+          </div>
+
+          <!-- Riconoscimento Testo OCR -->
+          <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                <span>Testo OCR</span>
+                <span id="ocrStatusBadge" style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: var(--success-color); font-weight: 600;">Tesseract ITA+ENG</span>
+              </label>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-secondary" id="btnCopyOCR" style="padding: 4px 8px; font-size: 11px;" title="Copia testo negli appunti">Copia</button>
+                <button class="btn btn-primary" id="btnRunOCR" style="padding: 4px 10px; font-size: 12px;">Esegui OCR</button>
+              </div>
+            </div>
+            <textarea id="pageOcrText" readonly style="width: 100%; height: 95px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 8px; font-size: 12px; resize: vertical;" placeholder="Il testo riconosciuto apparirà qui..."></textarea>
+          </div>
+
+          <!-- Codici QR & Barcode Rilevati -->
+          <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <label style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">Codici Rilevati</label>
+            <div id="pageQrCodes" style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: var(--text-secondary);">Nessun codice rilevato</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODALE RITAGLIO PROSPETTICO A 4 ANGOLI (CROPPER) -->
+  <div class="modal-backdrop" id="cropperModal">
+    <div class="modal-window cropper-modal-window">
+      <div class="modal-header">
+        <h2>Raddrizza & Ritaglia Prospettiva (4 Angoli)</h2>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" id="btnAutoDetectCrop">Rileva Bordi Automaticamente</button>
+          <button class="btn btn-secondary" id="btnResetCrop">Reimposta</button>
+        </div>
+      </div>
+      <div class="cropper-canvas-container">
+        <canvas id="cropCanvas"></canvas>
+        <canvas id="loupeCanvas"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="window.app.closeModal('cropperModal')">Annulla</button>
+        <button class="btn btn-primary" id="btnConfirmCrop">Applica e Raddrizza</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE FOTOCAMERA WEBCAM -->
+  <div class="modal-backdrop" id="cameraModal">
+    <div class="modal-window" style="max-width: 640px;">
+      <div class="modal-header">
+        <h2>Acquisizione da Fotocamera</h2>
+        <span id="cameraShotCount" style="font-size: 13px; font-weight: 600; color: var(--accent-color);">0 acquisiti</span>
+      </div>
+      <div class="camera-container">
+        <video id="cameraVideo" autoplay playsinline></video>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button class="btn btn-secondary" onclick="window.app.camera.stop(); window.app.closeModal('cameraModal')">Annulla</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" id="btnCaptureShot">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+            <span>Scatta</span>
+          </button>
+          <button class="btn btn-secondary" id="btnFinishScan">Termina e Salva</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE MIGLIORAMENTI IN BLOCCO (BULK ENHANCEMENTS) -->
+  <div class="modal-backdrop" id="batchEnhanceModal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2>Miglioramenti in Blocco</h2>
+        <span style="font-size: 13px; color: var(--accent-color); font-weight: 600;"><span id="batchModalCount">0</span> documenti selezionati</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">Filtro Colore Comune</label>
+          <select id="batchFilterSelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+            <option value="no_change">Mantieni filtri attuali</option>
+            <option value="magic_color" selected>Magic Paper (Ottimizzato per documenti)</option>
+            <option value="bw">Bianco e Nero netto</option>
+            <option value="grayscale">Scala di Grigi omogenea</option>
+            <option value="normal">Originale (Nessun filtro)</option>
+            <option value="sepia">Sepia Vintage</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">Rotazione di Massa</label>
+          <select id="batchRotationSelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+            <option value="0" selected>Nessuna rotazione aggiuntiva</option>
+            <option value="90">Ruota +90° in senso orario</option>
+            <option value="180">Ruota 180°</option>
+            <option value="270">Ruota +270° (90° antiorario)</option>
+          </select>
+        </div>
+
+        <div class="slider-group">
+          <label style="font-size: 13px; font-weight: 600;">Regola Luminosità (Offset)</label>
+          <input type="range" id="batchBrightnessSlider" min="-50" max="50" value="0">
+        </div>
+
+        <div class="slider-group">
+          <label style="font-size: 13px; font-weight: 600;">Regola Contrasto (Offset)</label>
+          <input type="range" id="batchContrastSlider" min="-50" max="50" value="0">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+          <input type="checkbox" id="batchAutoCropCheck" style="width: 18px; height: 18px; accent-color: var(--accent-color);">
+          <label for="batchAutoCropCheck" style="font-size: 13.5px; cursor: pointer;">Ricalcola ritaglio prospettico automatico per tutte le pagine</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="window.app.closeModal('batchEnhanceModal')">Annulla</button>
+        <button class="btn btn-primary" id="btnConfirmBatchEnhance">Applica a Tutti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE SPOSTA IN BLOCCO -->
+  <div class="modal-backdrop" id="batchMoveModal">
+    <div class="modal-window" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2>Sposta Documenti in un Blocco</h2>
+      </div>
+      <div>
+        <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">Seleziona il Blocco di Destinazione:</label>
+        <select id="batchTargetBlockSelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);"></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="window.app.closeModal('batchMoveModal')">Annulla</button>
+        <button class="btn btn-primary" id="btnConfirmBatchMove">Sposta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE CREA BLOCCO -->
+  <div class="modal-backdrop" id="createBlockModal">
+    <div class="modal-window" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2>Nuovo Blocco Documenti</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Nome Blocco:</label>
+          <input type="text" id="newBlockName" placeholder="es. Contratti 2026, Ricevute Benzina..." style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Colore Etichetta:</label>
+          <input type="color" id="newBlockColor" value="#3b82f6" style="width: 100%; height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); cursor: pointer;">
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Descrizione (Opzionale):</label>
+          <input type="text" id="newBlockDesc" placeholder="Note identificative..." style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="window.app.closeModal('createBlockModal')">Annulla</button>
+        <button class="btn btn-primary" id="btnConfirmCreateBlock">Salva Blocco</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE ESPORTAZIONE DOCUMENTO (PDF, JPG, PNG) -->
+  <div class="modal-backdrop" id="exportModal">
+    <div class="modal-window" style="max-width: 460px;">
+      <div class="modal-header">
+        <h2>Esporta Documento</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Formato di Esportazione:</label>
+          <select id="exportFormatSelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); font-weight: 600;">
+            <option value="pdf" selected>Documento PDF (.pdf)</option>
+            <option value="jpg">Immagine / Archivio JPG (.jpg / .zip)</option>
+            <option value="png">Immagine / Archivio PNG ad alta definizione (.png / .zip)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Pagine da Esportare:</label>
+          <select id="exportScopeSelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+            <option value="all" selected>Tutto il documento (tutte le pagine)</option>
+            <option value="current">Solo la pagina corrente visualizzata</option>
+          </select>
+        </div>
+
+        <div id="pdfSpecificOptions" style="display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Formato Pagina PDF:</label>
+            <select id="exportPdfPageSize" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+              <option value="A4" selected>A4 Standard (Stampa ottimale)</option>
+              <option value="Letter">Formato Lettera</option>
+              <option value="Auto">Dimensione Originale Documento</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Protezione con Password (Opzionale):</label>
+            <input type="password" id="exportPdfPassword" placeholder="Lascia vuoto per nessuna crittografia" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+          </div>
+        </div>
+
+        <div id="qualityOptionRow">
+          <label style="font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;">Qualità e Risoluzione:</label>
+          <select id="exportQualitySelect" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+            <option value="high" selected>Alta qualità (92%)</option>
+            <option value="medium">Bilanciata (78%)</option>
+            <option value="low">Minima dimensione file (60%)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="window.app.closeModal('exportModal')">Annulla</button>
+        <button class="btn btn-primary" id="btnConfirmExport">Scarica</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE AVANZAMENTO IMPORTAZIONE FILE -->
+  <div class="modal-backdrop" id="importProgressModal">
+    <div class="modal-window" style="max-width: 440px; text-align: center;">
+      <h3 id="importProgressTitle" style="font-size: 17px; margin-bottom: 6px;">Importazione file in corso...</h3>
+      <p id="importProgressSubtitle" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Elaborazione e scansione delle pagine...</p>
+      
+      <div style="width: 100%; height: 10px; background: var(--bg-primary); border-radius: 5px; overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 10px;">
+        <div id="importProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.15s ease-out; border-radius: 5px;"></div>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);">
+        <span id="importProgressCount">0 / 0</span>
+        <span id="importProgressPercent" style="font-weight: 600; color: var(--accent-color);">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE AVANZAMENTO ESPORTAZIONE GRUPPI DI DOCUMENTI -->
+  <div class="modal-backdrop" id="batchExportProgressModal">
+    <div class="modal-window" style="max-width: 460px; text-align: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 14px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); color: var(--accent-color); display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <h3 id="batchExportProgressTitle" style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Esportazione in blocco...</h3>
+        <p id="batchExportProgressSubtitle" style="font-size: 13px; color: var(--text-secondary); margin: 0; min-height: 20px;">Preparazione delle pagine...</p>
+      </div>
+      
+      <div style="width: 100%; height: 12px; background: var(--bg-primary); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 10px;">
+        <div id="batchExportProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.2s ease-out; border-radius: 6px;"></div>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary);">
+        <span id="batchExportProgressCount">0 / 0 pagine</span>
+        <span id="batchExportProgressPercent" style="font-weight: 700; color: var(--accent-color);">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenitore Notifiche Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Script Applicazione -->
+  <script src="/static/js/cropper.js"></script>
+  <script src="/static/js/camera.js"></script>
+  <script src="/static/js/batch_manager.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
