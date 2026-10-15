@@ -1,10 +1,10 @@
-# Render Blueprint Specification for Scanner Web Multi
+# Render Blueprint Specification for Desktop Web Scanner
 services:
   - type: web
-    name: scanner-web-multi
+    name: desktop-web-scanner
     runtime: docker
     plan: free
     autoDeploy: true
     envVars:
       - key: PORT
-        value: 5000
+        value: 10000

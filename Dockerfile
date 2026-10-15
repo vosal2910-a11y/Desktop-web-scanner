@@ -4,7 +4,7 @@ FROM python:3.12-slim
 # Evita la scrittura dei file .pyc e forza il flushing di stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PORT=5000
+ENV PORT=10000
 
 # Installazione dipendenze di sistema:
 # - tesseract-ocr con pacchetti linguistici italiano e inglese
@@ -29,8 +29,8 @@ COPY . .
 # Creazione delle cartelle dati persistenti
 RUN mkdir -p /app/data/documents /app/data/trash
 
-# Esposizione porta (Render assegna dinamicamente $PORT a runtime)
-EXPOSE 5000
+# Esposizione porta 10000 (predefinita di Render) e porta alternativa 5000
+EXPOSE 10000 5000
 
-# Avvio con server WSGI di produzione Gunicorn
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 120 app:app"]
+# Avvio con server WSGI di produzione Gunicorn vincolato a 0.0.0.0 e porta $PORT (default 10000)
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 120 app:app"]
