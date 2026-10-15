@@ -193,5 +193,20 @@ c:\Users\s.bruno\Documents\Oss document pc\
         - **Ciclo 1**: 20/20 superati in 9.31s (100% OK).
         - **Ciclo 2**: 20/20 superati in 6.94s (100% OK).
         - **Ciclo 3**: 20/20 superati in 6.53s (100% OK).
+  - **Preparazione Ufficiale per GitHub e Deployment Cloud su Render.com (`onrender`)**:
+    - **Proprietà Intellettuale & Licenza MIT**:
+      - Creato il file `LICENSE` (MIT License) con menzione esplicita e doverosa al repository originario [OSS-DocumentScanner](https://github.com/ossappscollective/OSS-DocumentScanner) creato dalla OSS Apps Collective, e al lavoro di sviluppo continuo svolto in pair-programming con Google Gemini per creare un'applicazione pratica da lavoro.
+    - **Documentazione Completa (`README.md`)**:
+      - Redatta guida esaustiva bilingue con badge tecnici, spiegazione del funzionamento, architettura e tecnologie utilizzate (Python, Flask, OpenCV, Pillow, PyPDF, Tesseract OCR, Docker, Gunicorn).
+      - Sezione dettagliata sui crediti intellettuali e sull'impiego quotidiano da ufficio/lavoro.
+      - Istruzioni per l'avvio locale su Windows e guida passo-passo al deployment su Render.com.
+    - **Infrastruttura Docker & Render Blueprint**:
+      - Creato `Dockerfile` multi-piattaforma basato su `python:3.12-slim` con Tesseract OCR (`tesseract-ocr-ita` ed `eng`) e `libgl1` preinstallati per un'esperienza cloud a zero configurazione.
+      - Creato `render.yaml` (Render Blueprint) per il deployment automatico con 1 click.
+      - Aggiornato `requirements.txt` con `gunicorn` e `opencv-python-headless`.
+    - **Inizializzazione Git Repository & Controllo Versione**:
+      - Configurato `.gitignore` per ignorare file temporanei, cache Python e file caricati salvaguardando i segnaposto `.gitkeep`.
+      - Inizializzato repository locale Git e registrato il commit iniziale di rilascio.
+
 
 
