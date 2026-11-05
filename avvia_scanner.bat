@@ -1,4 +1,6 @@
 @echo off
+chcp 65001 >nul
+cd /d "%~dp0"
 title Scanner Web Multi - Windows Web App
 color 0B
 
@@ -7,10 +9,10 @@ echo          SCANNER WEB MULTI - WEB APP WINDOWS
 echo ========================================================
 echo.
 
-:: Controlla se Python e installato
+:: Controlla se Python è installato
 where python >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [ERRORE] Python non e stato trovato nel sistema!
+    echo [ERRORE] Python non è stato trovato nel sistema!
     echo Assicurati di installare Python da https://www.python.org/
     echo e di spuntare 'Add Python to PATH'.
     pause
@@ -26,7 +28,7 @@ powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 5000 -ErrorActio
 echo [3/3] Avvio server locale e apertura browser...
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:5000"
 
-echo [3/3] Applicazione avviata! Il browser si aprira automaticamente.
+echo [3/3] Applicazione avviata! Il browser si aprirà automaticamente.
 echo Premi CTRL+C nella finestra per arrestare il server.
 echo.
 python app.py

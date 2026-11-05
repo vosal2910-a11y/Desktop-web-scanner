@@ -175,16 +175,34 @@ class ScannerApp {
       });
     });
 
-    // Editor: Sliders
+    // Editor: Sliders con anteprima CSS immediata (60 FPS) e debounce salvataggio server
     const brightSlider = document.getElementById('brightnessSlider');
     const contrastSlider = document.getElementById('contrastSlider');
-    const onSliderChange = () => {
-      document.getElementById('brightnessVal').textContent = brightSlider.value;
-      document.getElementById('contrastVal').textContent = contrastSlider.value;
-      this.setPageAdjustments(parseInt(brightSlider.value), parseInt(contrastSlider.value));
+    let sliderDebounceTimer = null;
+
+    const onSliderInput = () => {
+      const b = parseInt(brightSlider.value);
+      const c = parseInt(contrastSlider.value);
+      document.getElementById('brightnessVal').textContent = b;
+      document.getElementById('contrastVal').textContent = c;
+
+      // Anteprima CSS fluida in tempo reale sul canvas/immagine senza chiamate di rete
+      const mainImg = document.getElementById('mainStageImg');
+      if (mainImg) {
+        const cssB = Math.max(0, 1 + (b / 100));
+        const cssC = Math.max(0, 1 + (c / 100));
+        mainImg.style.filter = `brightness(${cssB}) contrast(${cssC})`;
+      }
+
+      // Debounce: invia una singola richiesta al server solo al termine della regolazione
+      clearTimeout(sliderDebounceTimer);
+      sliderDebounceTimer = setTimeout(() => {
+        this.setPageAdjustments(b, c);
+      }, 350);
     };
-    brightSlider?.addEventListener('input', onSliderChange);
-    contrastSlider?.addEventListener('input', onSliderChange);
+
+    brightSlider?.addEventListener('input', onSliderInput);
+    contrastSlider?.addEventListener('input', onSliderInput);
 
     // Chiusura Modali con tasto ESC o click su backdrop
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
@@ -560,7 +578,11 @@ class ScannerApp {
       });
       const updated = await res.json();
       this.currentDoc.pages[this.activePageIndex] = updated;
-      document.getElementById('mainStageImg').src = `/files/${this.currentDoc.id}/${updated.processed_file}?t=${Date.now()}`;
+      const mainImg = document.getElementById('mainStageImg');
+      if (mainImg) {
+        mainImg.style.filter = ''; // Reset filtro CSS provvisorio
+        mainImg.src = `/files/${this.currentDoc.id}/${updated.processed_file}?t=${Date.now()}`;
+      }
     } catch (err) {
       console.error(err);
     }
@@ -668,6 +690,52 @@ class ScannerApp {
     }
   }
 
+
+  // Ottimizzazione preventiva immagine client-side per massima economia di rete e RAM server
+  async optimizeImageForUpload(file, maxDimension = 2048, quality = 0.88) {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      return file;
+    }
+    // Se l'immagine è già inferiore a 1.5MB non necessita di compressione preliminare
+    if (file.size < 1.5 * 1024 * 1024) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (Math.max(w, h) <= maxDimension) {
+          resolve(file);
+          return;
+        }
+        const scale = maxDimension / Math.max(w, h);
+        const targetW = Math.round(w * scale);
+        const targetH = Math.round(h * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        canvas.toBlob((blob) => {
+          if (blob && blob.size < file.size) {
+            const cleanName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+            resolve(new File([blob], cleanName, { type: 'image/jpeg' }));
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
   // --- ACQUISIZIONE E CARICAMENTO FILE ---
 
   async handleFileUpload(files) {
@@ -686,13 +754,16 @@ class ScannerApp {
       });
       const doc = await docRes.json();
 
-      // 2. Aggiungi ciascuna immagine come pagina con aggiornamento barra
+      // 2. Aggiungi ciascuna immagine come pagina con pre-ottimizzazione e aggiornamento barra
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         this.updateImportProgress(i + 1, files.length, file.name);
 
+        // Pre-ridimensionamento client-side per risparmio banda e RAM su server
+        const optimizedFile = await this.optimizeImageForUpload(file);
+
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', optimizedFile);
         formData.append('auto_crop', 'true');
         formData.append('filter_type', 'magic_color');
 
@@ -734,8 +805,9 @@ class ScannerApp {
             this.updateImportProgress(i + 1, files.length, file.name);
           }
 
+          const optimizedFile = await this.optimizeImageForUpload(file);
           const formData = new FormData();
-          formData.append('image', file);
+          formData.append('image', optimizedFile);
           formData.append('auto_crop', 'true');
           formData.append('filter_type', 'magic_color');
 

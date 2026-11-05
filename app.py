@@ -6,6 +6,7 @@ import base64
 import threading
 import uuid
 import re
+import gc
 import cv2
 import numpy as np
 from flask import Flask, request, jsonify, send_file, send_from_directory, render_template_string
@@ -190,6 +191,7 @@ def api_add_page(doc_id):
         img_bytes = file.read()
         nparr = np.frombuffer(img_bytes, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        del img_bytes, nparr
     # Oppure payload JSON con stringa base64
     elif request.is_json and 'image_base64' in request.json:
         b64_data = request.json['image_base64']
@@ -198,6 +200,7 @@ def api_add_page(doc_id):
         img_bytes = base64.b64decode(b64_data)
         nparr = np.frombuffer(img_bytes, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        del img_bytes, nparr, b64_data
         auto_crop = request.json.get("auto_crop", True)
         filter_type = request.json.get("filter_type", "magic_color")
     else:
@@ -208,8 +211,12 @@ def api_add_page(doc_id):
 
     try:
         page = add_page_to_document(doc_id, img_np, auto_crop=auto_crop, filter_type=filter_type)
+        del img_np
+        gc.collect()
         return jsonify(page), 201
     except Exception as e:
+        del img_np
+        gc.collect()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/documents/<doc_id>/pages/<page_id>/process', methods=['POST'])
@@ -459,6 +466,15 @@ def api_export_batch_images():
 
 EXPORT_JOBS = {}
 
+def cleanup_expired_export_jobs():
+    """Rimuove job più vecchi di 10 minuti per prevenire accumulo di memoria."""
+    now = time.time()
+    expired = [jid for jid, j in list(EXPORT_JOBS.items()) if now - j.get("created_at", now) > 600]
+    for jid in expired:
+        del EXPORT_JOBS[jid]
+    if expired:
+        gc.collect()
+
 @app.route('/batch/export-job', methods=['POST'])
 @app.route('/api/batch/export-job', methods=['POST'])
 def api_create_export_job():
@@ -472,6 +488,7 @@ def api_create_export_job():
     if not doc_ids:
         return jsonify({"error": "Nessun documento specificato"}), 400
 
+    cleanup_expired_export_jobs()
     job_id = "job_" + uuid.uuid4().hex[:10]
     EXPORT_JOBS[job_id] = {
         "status": "processing",
@@ -482,7 +499,8 @@ def api_create_export_job():
         "result_bytes": None,
         "filename": "esportazione",
         "mimetype": "application/octet-stream",
-        "error": None
+        "error": None,
+        "created_at": time.time()
     }
 
     def run_job():

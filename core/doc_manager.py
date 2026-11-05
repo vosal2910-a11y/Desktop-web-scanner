@@ -3,6 +3,7 @@ import json
 import uuid
 import time
 import shutil
+import gc
 import cv2
 import numpy as np
 from PIL import Image
@@ -256,7 +257,15 @@ def add_page_to_document(doc_id, image_np_or_path, auto_crop=True, filter_type="
     if img_orig is None:
         raise ValueError("Impossibile decodificare l'immagine della pagina")
 
-    h, w = img_orig.shape[:2]
+    # Economia risorse: limita risoluzione massima a 2048px (300 DPI per A4)
+    orig_h, orig_w = img_orig.shape[:2]
+    max_dim = 2048
+    if max(orig_h, orig_w) > max_dim:
+        scale = max_dim / float(max(orig_h, orig_w))
+        img_orig = cv2.resize(img_orig, (int(orig_w * scale), int(orig_h * scale)), interpolation=cv2.INTER_AREA)
+        h, w = img_orig.shape[:2]
+    else:
+        h, w = orig_h, orig_w
 
     # Percorsi file
     orig_rel = f"{page_id}_orig.jpg"
@@ -267,8 +276,8 @@ def add_page_to_document(doc_id, image_np_or_path, auto_crop=True, filter_type="
     proc_path = os.path.join(doc_dir, proc_rel)
     thumb_path = os.path.join(doc_dir, thumb_rel)
 
-    # 1. Salva immagine originale ad alta fedeltà
-    cv2.imwrite(orig_path, img_orig, [cv2.IMWRITE_JPEG_QUALITY, 95])
+    # 1. Salva immagine originale (qualità 90, bilanciata per RAM e disco)
+    cv2.imwrite(orig_path, img_orig, [cv2.IMWRITE_JPEG_QUALITY, 90])
 
     # 2. Rilevamento angoli del quad
     quad = detect_document_corners(img_orig)
@@ -279,16 +288,16 @@ def add_page_to_document(doc_id, image_np_or_path, auto_crop=True, filter_type="
     else:
         warped = img_orig.copy()
 
-    # 4. Applica miglioramento iniziale
+    # 4. Applica miglioramento iniziale (qualità 88)
     processed = apply_color_enhancements(warped, filter_type=filter_type)
-    cv2.imwrite(proc_path, processed, [cv2.IMWRITE_JPEG_QUALITY, 92])
+    cv2.imwrite(proc_path, processed, [cv2.IMWRITE_JPEG_QUALITY, 88])
 
-    # 5. Genera thumbnail rapida (max 300px)
-    thumb_scale = 300.0 / max(processed.shape[:2])
-    thumb_w = int(processed.shape[1] * thumb_scale)
-    thumb_h = int(processed.shape[0] * thumb_scale)
+    # 5. Genera thumbnail rapida (max 220px, qualità 75 per massima reattività)
+    thumb_scale = 220.0 / max(processed.shape[:2])
+    thumb_w = max(10, int(processed.shape[1] * thumb_scale))
+    thumb_h = max(10, int(processed.shape[0] * thumb_scale))
     thumb = cv2.resize(processed, (thumb_w, thumb_h), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(thumb_path, thumb, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    cv2.imwrite(thumb_path, thumb, [cv2.IMWRITE_JPEG_QUALITY, 75])
 
     # 6. Rilevamento codici QR / Barcode
     qrcodes = detect_barcodes_and_qrcodes(processed)
@@ -371,18 +380,20 @@ def process_page(doc_id, page_id, quad=None, filter_type=None, brightness=None, 
         bw_threshold=page.get("bw_threshold", 128)
     )
 
-    # Salva immagine elaborata
-    cv2.imwrite(proc_path, processed, [cv2.IMWRITE_JPEG_QUALITY, 92])
+    # Salva immagine elaborata (qualità 88)
+    cv2.imwrite(proc_path, processed, [cv2.IMWRITE_JPEG_QUALITY, 88])
 
-    # Aggiorna miniatura
-    thumb_scale = 300.0 / max(processed.shape[:2])
-    thumb_w = int(processed.shape[1] * thumb_scale)
-    thumb_h = int(processed.shape[0] * thumb_scale)
+    # Aggiorna miniatura (max 220px, qualità 75)
+    thumb_scale = 220.0 / max(processed.shape[:2])
+    thumb_w = max(10, int(processed.shape[1] * thumb_scale))
+    thumb_h = max(10, int(processed.shape[0] * thumb_scale))
     thumb = cv2.resize(processed, (thumb_w, thumb_h), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(thumb_path, thumb, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    cv2.imwrite(thumb_path, thumb, [cv2.IMWRITE_JPEG_QUALITY, 75])
 
-    # Aggiorna QR codes
-    page["qrcodes"] = detect_barcodes_and_qrcodes(processed)
+    # Aggiorna QR codes SOLO se è cambiata la geometria di ritaglio (quad) o assenti
+    if quad is not None or "qrcodes" not in page:
+        page["qrcodes"] = detect_barcodes_and_qrcodes(processed)
+    gc.collect()
 
     meta["updated_at"] = time.time()
     save_doc_meta(doc_id, meta, in_trash=meta.get("in_trash", False))
